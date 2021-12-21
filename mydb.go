@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"strings"
 	"time"
-
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -16,16 +15,24 @@ var (
 )
 
 type DBInfo struct {
-	Id string
-	Pwd string
-	Host string
-	Port int
-	Name string
+	Id string `json:"id"`
+	Pwd string `json:"pwd"`
+	Host string `json:"host"`
+	Port int `json:"port"`
+	Name string `json:"dbname"`
 }
 
 func Connect(c DBInfo) {
 	var err error
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local", c.Id, c.Pwd, c.Host, c.Port, c.Name)
+	DB, err = sql.Open("mysql", dsn)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func Connect_with_dsn(dsn string) {
+	var err error
 	DB, err = sql.Open("mysql", dsn)
 	if err != nil {
 		panic(err)
