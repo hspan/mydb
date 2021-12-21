@@ -230,7 +230,7 @@ func update(tbl string, cond map[string]interface{}, value map[string]interface{
 			set += ","
 		} 
 	}
-	
+
 	n2 := len(cond)
 	if n2 == 0 {
 		query = fmt.Sprintf("UPDATE %s SET %s", tbl, set)
@@ -250,8 +250,36 @@ func update(tbl string, cond map[string]interface{}, value map[string]interface{
 	return
 }
 
-func Update(tbl string, cond map[string]interface{}, value map[string]interface{}) {
-	query := update(tbl, cond, value)
+func update1(data interface{}) string {
+	st := reflect.ValueOf(data).Elem()
+	tbl := to_Name(st.Type().Name())
+	var cond, value map[string]interface{}
+	cond = make(map[string]interface{})
+	value = make(map[string]interface{})
+
+	num := st.Type().NumField()
+	for i:=0; i<num; i++ {
+		if st.Type().Field(i).Tag.Get("key") != "primarykey" {
+			value[get_field_name(st.Type().Field(i))] = get_field_value(st.Type().Field(i), st.Field(i))
+		} else {
+			cond[get_field_name(st.Type().Field(i))] = get_field_value(st.Type().Field(i), st.Field(i))
+		}
+	}
+	q := update(tbl, cond, value)
+	return q
+}
+
+func Update(arg ...interface{}) {
+	query := ""
+	switch len(arg) {
+	case 1:
+		query = update1(arg[0])
+	case 3:
+		query = update(arg[0].(string), arg[1].(map[string]interface{}), arg[2].(map[string]interface{}))
+		
+	default:
+		panic("에러")
+	}
 	// res, err := DB.Exec(query)
 	DB.Exec(query)
 }
