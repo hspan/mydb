@@ -137,7 +137,7 @@ func Create(tbl interface{}) {
 }
 
 func get_keys(st reflect.Type) (keys map[string]string) {
-	return
+	return 
 }
 
 func get_field_value(field reflect.StructField, value reflect.Value) (ret string) {
@@ -185,12 +185,66 @@ func Insert(data interface{}) {
 	DB.Exec(query)
 }
 
-func update(data interface{}) (query string) {
+func get_value(v interface{}) (ret string) {
+	
+	switch reflect.TypeOf(v).Name() {
+	case "int32":
+		ret = fmt.Sprintf("%d", v.(int32))
+	case "int64":
+		ret = fmt.Sprintf("%d", v.(int64))
+	case "int":
+		ret = fmt.Sprintf("%d", v.(int))
+	case "float32":
+		ret = fmt.Sprintf("%f", v.(float32))
+	case "float64":
+		ret = fmt.Sprintf("%f", v.(float64))
+	case "bool":
+		if v.(bool) {
+			ret = "true"
+		} else {
+			ret = "false"
+		}
+	case "time", "Time":
+		ret = "'"+ v.(time.Time).Format("2006-01-02 15:04:05")+"'"
+	case "string":
+		ret = "'"+v.(string)+"'"
+	}
 	return
 }
 
-func Update(data interface{}) {
-	query := insert(data)
+func update(tbl string, cond map[string]interface{}, value map[string]interface{}) (query string) {
+	set := ""
+	n1 := len(value)
+	i := 0
+	for k, v := range value {
+		i++
+		set += k + "=" + get_value(v)
+		if i < n1 {
+			set += ","
+		} 
+	}
+	
+	n2 := len(cond)
+	if n2 == 0 {
+		query = fmt.Sprintf("UPDATE %s SET %s", tbl, set)
+	} else {
+		condition := ""
+		
+		i = 0
+		for k, v := range cond {
+			i++
+			condition += k + "=" + get_value(v)
+			if i < n1 {
+				condition += " and "
+			} 
+		}
+		query = fmt.Sprintf("UPDATE %s SET %s WHERE %s", tbl, set, condition)
+	}
+	return
+}
+
+func Update(tbl string, cond map[string]interface{}, value map[string]interface{}) {
+	query := update(tbl, cond, value)
 	// res, err := DB.Exec(query)
 	DB.Exec(query)
 }
@@ -206,11 +260,27 @@ func Upsert_compare(data interface{}) {
 }
 
 func upsert(data interface{}) (query string) {
+	query = insert(data) + " ON DUPLICATE KEY UPDATE "
+	st := reflect.ValueOf(data).Elem()
+	num := st.Type().NumField()
+	ustr := ""
+	for i:=0; i<num; i++ {
+		if st.Type().Field(i).Tag.Get("key") != "primarykey" {
+			fieldname := get_field_name(st.Type().Field(i))
+		value := get_field_value(st.Type().Field(i), st.Field(i))
+		ustr += fieldname +"=" + value + ","
+		}
+	}
+	n := len(ustr)
+	if ustr[n-1] == ',' {
+		ustr = ustr[0:n-1]
+	}
+	query += ustr
 	return
 }
 
 func Upsert(data interface{}) {
-	query := insert(data)
+	query := upsert(data)
 	// res, err := DB.Exec(query)
 	DB.Exec(query)
 }

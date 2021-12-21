@@ -91,3 +91,33 @@ func TestInsert(t *testing.T) {
 		t.Log("TestStruct2 Insert OK")
 	}
 }
+
+func TestUpdate(t *testing.T) {
+	var cond, value map[string]interface{}
+	cond = make(map[string]interface{})
+	value = make(map[string]interface{})
+	cond["a"] = 1
+	cond["b"] = "b"
+	cond["c"] = time.Now()
+	value["a"] = 2
+	value["d"] = 3
+	value["e"] ="c"
+	str := update("abc", cond, value)
+	t.Error(str)
+}
+
+func TestUpsert(t *testing.T) {
+	// b, _ := time.Parse("2006-01-02 15:04:05", "2021-12-20 11:43:00")
+	// var a TestStruct1 = TestStruct1{1, 2, 3, 4, 5.0, 6.0, true, b, "abcd"}
+	// q := upsert(&a)
+	// t.Error(q)
+	type Schedule struct {
+		Item string `db:"item" key:"primarykey" length:"20"`
+		Date time.Time `db:"date"`
+	}
+	s := Schedule{"abc", time.Now()}
+	q := upsert(&s)
+	t.Error(q)
+
+
+}
